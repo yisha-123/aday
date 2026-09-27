@@ -400,21 +400,21 @@ html,body { width:100%; height:100%; overflow:hidden; background:#cfe8ff;
   </div>
 
   <div class="page" id="p2">
-    <video class="bg-video" id="p2video" src="视频/p2.mp4" playsinline muted></video>
+    <video class="bg-video" id="p2video" src="视频/p2.mp4" playsinline preload="none" muted></video>
   </div>
 
   <div class="page" id="p3">
-    <video class="bg-video" id="p3video" src="视频/p3.mp4" playsinline muted loop></video>
+    <video class="bg-video" id="p3video" src="视频/p3.mp4" playsinline preload="none" muted loop></video>
     <div id="card-mask"></div>
     <div id="card-game"></div>
   </div>
 
   <div class="page" id="p4">
-    <video class="bg-video" id="p4video" src="视频/p4-p5转场动画.mp4" playsinline muted></video>
+    <video class="bg-video" id="p4video" src="视频/p4-p5转场动画.mp4" playsinline preload="none" muted></video>
   </div>
 
   <div class="page" id="p5">
-    <video class="bg-video" id="p5video" src="视频/p5-p6转场.mp4" playsinline preload="auto" muted></video>
+    <video class="bg-video" id="p5video" src="视频/p5-p6转场.mp4" playsinline preload="none" muted></video>
     <div class="ingredient" id="ing-flour" data-type="flour" style="background-image:url('png/第五页-像素厨房分层PNG/02-面粉袋.png')"></div>
     <div class="ingredient" id="ing-egg"   data-type="egg"   style="background-image:url('png/第五页-像素厨房分层PNG/03-鸡蛋.png')"></div>
     <div class="ingredient pos-left"  id="ing-straw" data-type="straw" style="background-image:url('png/第五页-像素厨房分层PNG/04-草莓.png')"></div>
@@ -428,7 +428,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#cfe8ff;
   </div>
 
   <div class="page" id="p7">
-    <video class="bg-video" id="p7video" src="视频/p7.mp4" playsinline preload="auto" muted loop></video>
+    <video class="bg-video" id="p7video" src="视频/p7.mp4" playsinline preload="none" muted loop></video>
   </div>
 
   <div id="dialog">
@@ -543,6 +543,7 @@ let p4DialogDone = false;
 let p7DialogDone = false;
 let p2WindPlayed = false;
 let p2HintShown = false;
+let audioLoaded = false;
 
 const $ = id => document.getElementById(id);
 const btnBack = $('btnBack');
@@ -574,11 +575,15 @@ sfxWind.volume = 0.6;
 sfxFirework.volume = 0.6;
 sfxFirework.loop = true;
 
-sfxClick.load();
-sfxCard.load();
-sfxTV.load();
-sfxCloud.load();
-sfxWind.load();
+function loadAudio() {
+  if (audioLoaded) return;
+  audioLoaded = true;
+  sfxClick.load();
+  sfxCard.load();
+  sfxTV.load();
+  sfxCloud.load();
+  sfxWind.load();
+}
 
 function playSfx(audio) {
   if (!bgmOn) return;
@@ -732,6 +737,7 @@ function goTo(pageId, opts) {
   if (current === 'p2') {
     p2WindPlayed = false;
     const v = $('p2video');
+    v.preload = 'auto';
     v.currentTime = 0; v.muted = true;
     v.play().catch(()=>{});
     const windHandler = () => {
@@ -745,7 +751,9 @@ function goTo(pageId, opts) {
     startDialog('p2');
   }
   if (current === 'p3') {
-    const v = $('p3video'); v.currentTime = 0; v.play().catch(()=>{});
+    const v = $('p3video');
+    v.preload = 'auto';
+    v.currentTime = 0; v.play().catch(()=>{});
     if (opts.reset) {
       p3Done = false; p3Stage = 0;
       resetCardGame(); hideCardGame();
@@ -756,6 +764,7 @@ function goTo(pageId, opts) {
   }
   if (current === 'p4') {
     const v = $('p4video');
+    v.preload = 'auto';
     stopLoop(v);
     v.currentTime = 0; v.muted = true;
     loopRange(v, 0, 1.0);
@@ -763,6 +772,8 @@ function goTo(pageId, opts) {
     startDialog('p4');
   }
   if (current === 'p5') {
+    const v = $('p5video');
+    v.preload = 'auto';
     if (opts.reset || !p5Done) {
       p5Done = false;
       resetP5();
@@ -778,6 +789,7 @@ function goTo(pageId, opts) {
   }
   if (current === 'p7') {
     const v = $('p7video');
+    v.preload = 'auto';
     stopLoop(v);
     v.currentTime = 0; v.muted = true;
     v.loop = true;
@@ -1226,7 +1238,6 @@ $('viewer').addEventListener('click', e => {
   $('viewer').classList.remove('show');
 });
 
-/* 下载按钮：新标签打开图片 + 提示长按保存 */
 $('downloadBtn').addEventListener('click', e => {
   e.preventDefault();
   e.stopPropagation();
@@ -1274,7 +1285,9 @@ function startP1() {
   v.currentTime = 0;
   v.play().catch(()=>{});
   $('btnStart').style.display = 'none';
-  unlockAudio();
+  // 开始加载音频 + 解锁
+  loadAudio();
+  setTimeout(unlockAudio, 100);
   if (bgmOn) bgm.play().catch(()=>{});
   const jump = () => { v.ontimeupdate=null; v.onended=null; v.pause(); goTo('p2', {reset:true}); };
   v.ontimeupdate = () => { if (v.duration && v.currentTime >= v.duration - 0.3) jump(); };
