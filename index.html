@@ -456,7 +456,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#cfe8ff;
     <div class="polaroid">
       <img id="viewerImg" src="" alt="">
       <div class="caption" id="viewerCaption"></div>
-      <a class="download-btn" id="downloadBtn" download>
+      <a class="download-btn" id="downloadBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="#3a6fd8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="7 10 12 15 17 10"></polyline>
@@ -574,14 +574,12 @@ sfxWind.volume = 0.6;
 sfxFirework.volume = 0.6;
 sfxFirework.loop = true;
 
-/* 预加载音效 */
 sfxClick.load();
 sfxCard.load();
 sfxTV.load();
 sfxCloud.load();
 sfxWind.load();
 
-/* 播放音效（用 cloneNode 避免打断/冲突） */
 function playSfx(audio) {
   if (!bgmOn) return;
   try {
@@ -591,7 +589,6 @@ function playSfx(audio) {
   } catch (e) {}
 }
 
-/* iOS / 安卓首次解锁所有音频 */
 function unlockAudio() {
   [sfxClick, sfxCard, sfxTV, sfxCloud, sfxWind].forEach(a => {
     try {
@@ -820,9 +817,22 @@ $('dialogBubble').addEventListener('click', () => {
   playSfx(sfxClick);
   if (dialogLocked) return;
 
-  if (current === 'p3' && p3Stage === 0) {
-    p3Stage = 1;
-    hideDialog(); showCardGame();
+  if (current === 'p3') {
+    if (p3Stage === 0) {
+      p3Stage = 1;
+      hideDialog(); showCardGame();
+      return;
+    }
+    if (p3Stage === 2) {
+      const story = STORY['p3done'];
+      if (dialogIndex < story.lines.length - 1) {
+        dialogIndex++;
+        renderLine('p3done');
+      } else {
+        nextPage();
+      }
+      return;
+    }
     return;
   }
 
@@ -872,7 +882,6 @@ $('dialogBubble').addEventListener('click', () => {
   }
 
   let key = current;
-  if (current === 'p3' && p3Done) key = 'p3done';
   if (current === 'p6' && p6Done) key = 'p6done';
   const story = STORY[key];
   if (!story) return;
@@ -880,7 +889,6 @@ $('dialogBubble').addEventListener('click', () => {
     dialogIndex++;
     renderLine(key);
   } else {
-    // 最后一句后再点 → 翻下一页（P2、P6）
     if (current === 'p2' || current === 'p6') {
       nextPage();
     }
@@ -1205,18 +1213,28 @@ function buildAlbum() {
   });
 }
 
+let currentViewerPhoto = null;
 function openViewer(photo) {
+  currentViewerPhoto = photo;
   $('viewerImg').src = photo.src;
   const parts = photo.caption.split('——').map(s => s.trim());
   $('viewerCaption').innerHTML = parts.join('<br>');
-  const dl = $('downloadBtn');
-  dl.href = photo.src;
-  dl.download = 'aday-photo.png';
   $('viewer').classList.add('show');
 }
 $('viewer').addEventListener('click', e => {
   if (e.target.closest('.download-btn')) return;
   $('viewer').classList.remove('show');
+});
+
+/* 下载按钮：新标签打开图片 + 提示长按保存 */
+$('downloadBtn').addEventListener('click', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (!currentViewerPhoto) return;
+  toast('长按图片保存到相册');
+  setTimeout(() => {
+    window.open(currentViewerPhoto.src, '_blank');
+  }, 400);
 });
 
 /* ===== 结束弹窗 → 重新开始 ===== */
@@ -1256,7 +1274,6 @@ function startP1() {
   v.currentTime = 0;
   v.play().catch(()=>{});
   $('btnStart').style.display = 'none';
-  // 解锁所有音频（iOS 必须）
   unlockAudio();
   if (bgmOn) bgm.play().catch(()=>{});
   const jump = () => { v.ontimeupdate=null; v.onended=null; v.pause(); goTo('p2', {reset:true}); };
