@@ -101,7 +101,22 @@ html,body { width:100%; height:100%; overflow:hidden; background:#cfe8ff;
 #dialog .bubble .text { min-height:22px; }
 #dialog .hint { font-size:12px; color:#b98a5a; text-align:right; }
 
-#p1 .bg-video { object-fit:cover; }
+/* ===== P1 封面图 + 视频 ===== */
+#p1 .cover-img {
+  position:absolute; inset:0;
+  width:100%; height:100%; object-fit:cover;
+  z-index:0;
+  background:#cfe8ff;
+}
+#p1 .bg-video {
+  position:absolute; inset:0;
+  width:100%; height:100%; object-fit:cover;
+  z-index:1;
+  opacity:0;
+  transition:opacity .6s ease;
+}
+#p1 .bg-video.loaded { opacity:1; }
+
 #btnStart {
   position:absolute;
   left:0; right:0; bottom:6%;
@@ -389,6 +404,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:#cfe8ff;
   <div id="cameraHint">点击相机可收集回忆哦～</div>
 
   <div class="page active" id="p1">
+    <img class="cover-img" src="png/001.png" alt="">
     <video class="bg-video" id="p1video" src="视频/p1动画.mp4" playsinline preload="auto" muted></video>
     <button id="btnStart" onclick="startP1()">开启一天</button>
     <button class="q-btn" id="btnSoundP1" title="声音" style="position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:60;">
@@ -555,6 +571,14 @@ const dialogHint = $('dialogHint');
 const btnCamera = $('btnCamera');
 const btnAlbum = $('btnAlbum');
 const cameraHint = $('cameraHint');
+
+/* P1 视频：加载完后显示（遮住封面图） */
+const p1v = $('p1video');
+p1v.addEventListener('loadeddata', () => {
+  p1v.classList.add('loaded');
+}, { once: true });
+// 兜底：2 秒后强制显示视频（即使还没加载完）
+setTimeout(() => { p1v.classList.add('loaded'); }, 2000);
 
 /* ===== 音频 ===== */
 const bgm = new Audio('audio/beijing.wav');
@@ -1285,7 +1309,6 @@ function startP1() {
   v.currentTime = 0;
   v.play().catch(()=>{});
   $('btnStart').style.display = 'none';
-  // 开始加载音频 + 解锁
   loadAudio();
   setTimeout(unlockAudio, 100);
   if (bgmOn) bgm.play().catch(()=>{});
